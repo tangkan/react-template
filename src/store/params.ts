@@ -6,19 +6,19 @@ export interface IParams {
   id: string;
 }
 
-interface IBearActions {
+interface IActions {
   setTitle: (title: string) => void;
   setId: (status: string) => void;
 }
 
-const initBearData: IParams = {
+const initData: IParams = {
   title: "",
   id: "",
 };
 
-export const useParamsStroe = create<IParams & IBearActions>()(
+export const useParamsStroe = create<IParams & IActions>()(
   immer((set) => ({
-    ...initBearData,
+    ...initData,
     setTitle: (title) => {
       set((state) => {
         state.title = title;
