@@ -1,44 +1,90 @@
-import { useState } from "react";
-import "./App.css";
+import { Card, Input, Table, TableProps } from "antd";
+import { useQuery } from "react-query";
+import { IParams, useParamsStroe } from "./store/params";
+import { debounce, isEmpty, omitBy } from "lodash-es";
+import { useShallow } from "zustand/react/shallow";
+import "./App.less";
 
-// 写
-const WRITE = 0b00000001;
-// 读
-const READ = 0b00000010;
-// 删
-const DELETE = 0b00000100;
-// 创建
-const CREATE = 0b00001000;
+interface DataType {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+}
 
-// 创建角色
+// api可根据自己的后端服务使用@umijs/openapi生成
+export const fetchData = (params: IParams) => {
+  let url = "https://jsonplaceholder.typicode.com/posts";
+  const search = omitBy(params, (value) => isEmpty(value));
+  if (!isEmpty(search)) {
+    url += `?${new URLSearchParams(search).toString()}`;
+  }
 
-// 学生：读、写功能
-const STUDENTS = WRITE | READ;
+  return fetch(url).then(async (response) => {
+    // 如果请求返回status不为200 则抛出后端错误
+    if (response.status !== 200) {
+      const { message } = await response.json();
+      throw new Error(message);
+    }
+    return response.json();
+  });
+};
 
-// 教师：读、写、创建功能
-const TEACHERS = WRITE | READ | CREATE;
-
-// 校长：最高权限
-const PRINCIPAL = WRITE | READ | DELETE | CREATE;
-
-// 判断是否含有某个权限
-const hasPermission = (role: number, permisstion: number) =>
-  (role & permisstion) === permisstion;
-
-// 添加权限
-const addPermission = (role: number, permission: number) => role | permission;
-
-// 删除权限
-const removePermission = (role: number, premission: number) =>
-  role & ~premission;
+const columns: TableProps<DataType>["columns"] = [
+  {
+    title: "id",
+    dataIndex: "id",
+    key: "id",
+  },
+  {
+    title: "title",
+    dataIndex: "title",
+    key: "title",
+  },
+];
 
 function App() {
-  // const [count, setCount] = useState(0);
+  const { title, id, setTitle, setId } = useParamsStroe(
+    useShallow((state) => ({
+      title: state.title,
+      id: state.id,
+      setTitle: state.setTitle,
+      setId: state.setId,
+    }))
+  );
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["issues", title, id],
+    queryFn: () => fetchData({ title, id }),
+  });
 
   return (
-    <div>
-      <button>编辑</button>
-    </div>
+    <Card title="todo list">
+      <div className="search-cont">
+        <Input
+          allowClear
+          onChange={debounce((e) => {
+            setId(e.target.value);
+          }, 300)}
+          placeholder="please enter id to search"
+          style={{ width: 260, marginRight: 16 }}
+        />
+        <Input
+          allowClear
+          onChange={debounce((e) => {
+            setTitle(e.target.value);
+          }, 300)}
+          placeholder="please enter name to search"
+          style={{ width: 260, marginRight: 16 }}
+        />
+      </div>
+      <Table
+        rowKey="id"
+        columns={columns}
+        loading={isLoading}
+        dataSource={data}
+      />
+    </Card>
   );
 }
 
