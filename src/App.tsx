@@ -59,7 +59,7 @@ function App() {
   });
 
   return (
-    <Card title="todo list">
+    <Card title="table list">
       <div className="search-cont">
         <Input
           allowClear
